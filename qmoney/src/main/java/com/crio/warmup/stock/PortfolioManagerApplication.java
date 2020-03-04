@@ -1,11 +1,13 @@
-
 package com.crio.warmup.stock;
 
-import com.crio.warmup.stock.Employee;
 import com.crio.warmup.stock.dto.AnnualizedReturn;
 import com.crio.warmup.stock.dto.PortfolioTrade;
 import com.crio.warmup.stock.dto.TotalReturnsDto;
 import com.crio.warmup.stock.log.UncaughtExceptionHandler;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
@@ -18,15 +20,19 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.ThreadContext;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -47,9 +53,11 @@ public class PortfolioManagerApplication {
   //  There can be few unused imports, you will need to fix them to make the build pass.
 
   public static List<String> mainReadFile(String[] args) throws IOException, URISyntaxException {
+    
     ObjectMapper objectMapper = new ObjectMapper();
     List<String> l = new ArrayList<String>();
     Employee[] emp = objectMapper.readValue(resolveFileFromResources(args[0]), Employee[].class);
+     
     for (Employee x:emp) {
       l.add(x.getSymbol());
     }
@@ -112,10 +120,12 @@ public class PortfolioManagerApplication {
   public static List<String> debugOutputs() {
 
     String valueOfArgument0 = "trades.json";
-    String resultOfResolveFilePathArgs0 = "~/qmoney/bin/main/trades.json";
-    String toStringOfObjectMapper = "com.fasterxml.jackson.databind.ObjectMapper@373ebf74";
-    String functionNameFromTestFileInStackTrace = "mainReadFile()";
-    String lineNumberFromTestFileInStackTrace = "22:1";
+    String pathOfArgument0 = "~/workspace/singhalk30-ME_QMONEY/qmoney/bin/main/trades.json";
+    String resultOfResolveFilePathArgs0 = pathOfArgument0;
+    String toStringOfObjectMapper = "com.fasterxml.jackson.databind.ObjectMapper@5a9d6f02";
+    String functionNameFromTestFileInStackTrace = "PortfolioManagerApplicationTest.mainReadFile()";
+    String lineNumberFromTestFileInStackTrace = "22";
+
 
     return Arrays.asList(new String[]{valueOfArgument0, resultOfResolveFilePathArgs0,
         toStringOfObjectMapper, functionNameFromTestFileInStackTrace,
@@ -142,9 +152,63 @@ public class PortfolioManagerApplication {
   //   ./gradlew run --args="trades.json 2019-12-03"
   //  And make sure that its printing correct results.
 
-  public static List<String> mainReadQuotes(String[] args) throws IOException, URISyntaxException {
-     return Collections.emptyList();
+  public static List<String> convertMapToList(HashMap<String, Float> m) {
+    List<String> l = new ArrayList<String>();
+    m = sortByValue(m);
+    l.clear();
+    for (String entry : m.keySet()) { 
+      l.add(entry);
+    }
+
+    return l;
+
   }
+  
+  public static JsonData[] getJsonDataList(Employee o, String date)
+      throws JsonMappingException, RestClientException, JsonProcessingException {
+    final String enddat = "&endDate=" + date;
+    final String tok = "&token=" + "aef573290c64a87f6d88a3e0305b628a3e983527";
+    final String s = "https://api.tiingo.com/tiingo/daily/" + o.getSymbol() + "/prices?startDate=" + o.getPurchaseDate() + enddat + tok;
+ 
+    return getObjectMapper().readValue((new RestTemplate()).getForObject(s, String.class),
+      new TypeReference<JsonData[]>() {
+      });
+  }
+
+  public static HashMap<String, Float> sortByValue(HashMap<String, Float> hm) { 
+    // Create a list from elements of HashMap
+    List<Map.Entry<String, Float>> list = new LinkedList<Map.Entry<String, Float>>(hm.entrySet());
+ 
+    // Sort the list
+    Collections.sort(list, new Comparator<Map.Entry<String, Float>>() { 
+      public int compare(Map.Entry<String, Float> o1, Map.Entry<String, Float> o2) {
+
+        return (o1.getValue()).compareTo(o2.getValue());
+      }
+    });
+
+    // put data from sorted list to hashmap
+    HashMap<String, Float> temp = new LinkedHashMap<String, Float>();
+    for (Map.Entry<String, Float> aa : list) {
+      temp.put(aa.getKey(), aa.getValue());
+    }
+    return temp;
+  }
+  
+
+  public static List<String> mainReadQuotes(String[] args) throws IOException, URISyntaxException {
+    ObjectMapper objectMapper = new ObjectMapper();
+    Employee[] emp = objectMapper.readValue(resolveFileFromResources(args[0]), Employee[].class);
+    HashMap<String, Float> m = new HashMap<String, Float>();
+
+    for (Employee o : emp) {
+      JsonData[] lst = getJsonDataList(o, args[1]);
+      m.put(o.getSymbol(), new Float(lst[lst.length - 1].getclose()));
+    }
+
+    return convertMapToList(m);
+  }
+  
 
 
 
@@ -166,4 +230,3 @@ public class PortfolioManagerApplication {
 
   }
 }
-

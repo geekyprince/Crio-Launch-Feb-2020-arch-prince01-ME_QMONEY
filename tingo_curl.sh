@@ -1,0 +1,1 @@
+curl -X GET 'https://api.tiingo.com/tiingo/daily/aapl/prices?startDate=2019-01-02&endDate=2019-12-03&token=b2bbdf30e93918ce9bbda21ac0197d6cb7dccf1c'

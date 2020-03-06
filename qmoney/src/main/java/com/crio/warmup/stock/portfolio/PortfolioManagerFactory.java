@@ -10,7 +10,7 @@ public class PortfolioManagerFactory {
   // PortfolioManager using RestTemplate provided.
   public static PortfolioManager getPortfolioManager(RestTemplate restTemplate) {
 
-     return null;
+    return new PortfolioManagerImpl(restTemplate);
   }
 
 

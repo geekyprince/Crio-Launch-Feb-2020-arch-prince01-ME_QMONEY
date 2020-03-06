@@ -2,17 +2,19 @@ package com.crio.warmup.stock;
 
 import com.crio.warmup.stock.dto.AnnualizedReturn;
 import com.crio.warmup.stock.dto.PortfolioTrade;
+import com.crio.warmup.stock.dto.TotalReturnsDto;
 import com.crio.warmup.stock.log.UncaughtExceptionHandler;
+import com.crio.warmup.stock.portfolio.PortfolioManager;
+import com.crio.warmup.stock.portfolio.PortfolioManagerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.crio.warmup.stock.portfolio.PortfolioManager;
-import com.crio.warmup.stock.portfolio.PortfolioManagerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -26,13 +28,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
-import org.apache.logging.log4j.ThreadContext;
-import org.springframework.web.client.RestClientException;
-import java.nio.file.Files;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.ThreadContext;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -63,7 +64,6 @@ public class PortfolioManagerApplication {
     }
     return l;
   }
-
 
 
 
@@ -167,7 +167,7 @@ public class PortfolioManagerApplication {
   public static JsonData[] getJsonDataList(Employee o, String date)
       throws JsonMappingException, RestClientException, JsonProcessingException {
     final String enddat = "&endDate=" + date;
-    final String tok = "&token=" + "aef573290c64a87f6d88a3e0305b628a3e983527";
+    final String tok = "&token=" + "b2bbdf30e93918ce9bbda21ac0197d6cb7dccf1c";
     final String s = "https://api.tiingo.com/tiingo/daily/" + o.getSymbol() + "/prices?startDate=" + o.getPurchaseDate() + enddat + tok;
  
     return getObjectMapper().readValue((new RestTemplate()).getForObject(s, String.class),
@@ -228,14 +228,8 @@ public class PortfolioManagerApplication {
 
 
 
-
-
-
-
-
-
   // TODO: CRIO_TASK_MODULE_REFACTOR
-  //  Once you are done with the implementation inside PortfolioManagerImpl and
+  //  Once y-ou are done with the implementation inside PortfolioManagerImpl and
   //  PortfolioManagerFactory,
   //  Create PortfolioManager using PortfoliomanagerFactory,
   //  Refer to the code from previous modules to get the List<PortfolioTrades> and endDate, and
@@ -243,7 +237,6 @@ public class PortfolioManagerApplication {
   //  Test the same using the same commands as you used in module 3
   //  use gralde command like below to test your code
   //  ./gradlew run --args="trades.json 2020-01-01"
-  //  ./gradlew run --args="trades.json 2019-07-01"
   //  ./gradlew run --args="trades.json 2019-12-03"
   //  where trades.json is your json file
 
@@ -313,16 +306,19 @@ public class PortfolioManagerApplication {
 
 
 
-
   //  Confirm that you are getting same results as in Module3.
 
   public static List<AnnualizedReturn> mainCalculateReturnsAfterRefactor(String[] args)
       throws Exception {
-       String file = args[0];
-       LocalDate endDate = LocalDate.parse(args[1]);
-       String contents = readFileAsString(file);
-       ObjectMapper objectMapper = getObjectMapper();
-       return PortfolioManager.calculateAnnualizedReturn(Arrays.asList(portfolioTrades), endDate);
+    String file = args[0];
+    LocalDate endDate = LocalDate.parse(args[1]);
+    ObjectMapper objectMapper = getObjectMapper();
+    RestTemplate restTemplate = new RestTemplate();
+    PortfolioTrade[] emp = objectMapper.readValue(resolveFileFromResources(file), 
+    PortfolioTrade[].class);
+    PortfolioManagerFactory p = new PortfolioManagerFactory();
+    PortfolioManager v =  p.getPortfolioManager(restTemplate);
+    return v.calculateAnnualizedReturn(Arrays.asList(emp), endDate);
   }
 
 
@@ -339,8 +335,9 @@ public class PortfolioManagerApplication {
 
     //printJsonObject(mainCalculateSingleReturn(args));
 
-  
+
+
+
     printJsonObject(mainCalculateReturnsAfterRefactor(args));
   }
 }
-

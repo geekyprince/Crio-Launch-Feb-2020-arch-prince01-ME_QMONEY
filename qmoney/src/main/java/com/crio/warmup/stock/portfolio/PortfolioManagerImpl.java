@@ -19,6 +19,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.springframework.web.client.RestTemplate;
 
 public class PortfolioManagerImpl implements PortfolioManager {
@@ -26,9 +32,10 @@ public class PortfolioManagerImpl implements PortfolioManager {
 
 
   private RestTemplate restTemplate;
+  
   // Caution: Do not delete or modify the constructor, or else your build will break!
   // This is absolutely necessary for backward compatibility
- 
+
   protected PortfolioManagerImpl(RestTemplate restTemplate) {
     this.restTemplate = restTemplate;
   }
@@ -62,6 +69,8 @@ public class PortfolioManagerImpl implements PortfolioManager {
 
 
 
+
+
   private Comparator<AnnualizedReturn> getComparator() {
     return Comparator.comparing(AnnualizedReturn::getAnnualizedReturn).reversed();
   }
@@ -89,10 +98,10 @@ public class PortfolioManagerImpl implements PortfolioManager {
 
   public List<Candle> getStockQuote(String symbol, LocalDate from, LocalDate to)
       throws JsonProcessingException {
-    final String tok = "&token=" + "b2bbdf30e93918ce9bbda21ac0197d6cb7dccf1c";
+    final String tok = "&token=" + "aef573290c64a87f6d88a3e0305b628a3e983527";
     final String s="https://api.tiingo.com/tiingo/daily/" + symbol + "/prices?startDate=" + from + "&endDate=" + to + tok;
     return  Arrays.asList(getObjectMapper().readValue((restTemplate).getForObject(s, String.class),
-    new TypeReference<Candle[]>() {
+    new TypeReference<TiingoCandle[]>() {
     }));
   }
 
@@ -127,5 +136,7 @@ public class PortfolioManagerImpl implements PortfolioManager {
       });
     return list;
   }
+
+
 
 }
